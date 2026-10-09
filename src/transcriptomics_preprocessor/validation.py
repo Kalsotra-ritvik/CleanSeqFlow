@@ -109,26 +109,30 @@ def check_sample_name(name: str) -> str | None:
     return None
 
 
-def _check_duplicates(samples: Sequence[Sample], problems: list[str]) -> None:
+def _check_duplicates(samples: Sequence[Sample | tuple[str, str]], problems: list[str]) -> None:
+    """Report duplicate sample names / accessions. Accepts samples or (name, accession) pairs."""
     seen_names: dict[str, int] = {}
     seen_lower: dict[str, str] = {}
     seen_acc: dict[str, str] = {}
-    for s in samples:
-        seen_names[s.name] = seen_names.get(s.name, 0) + 1
-        low = s.name.lower()
-        if low in seen_lower and seen_lower[low] != s.name:
+    for item in samples:
+        name, accession = (item.name, item.accession) if isinstance(item, Sample) else item
+        if not name or not accession:
+            continue
+        seen_names[name] = seen_names.get(name, 0) + 1
+        low = name.lower()
+        if low in seen_lower and seen_lower[low] != name:
             problems.append(
-                f"sample names '{seen_lower[low]}' and '{s.name}' differ only in letter case; "
+                f"sample names '{seen_lower[low]}' and '{name}' differ only in letter case; "
                 "this is unsafe on case-insensitive file systems"
             )
-        seen_lower.setdefault(low, s.name)
-        if s.accession in seen_acc:
+        seen_lower.setdefault(low, name)
+        if accession in seen_acc:
             problems.append(
-                f"accession {s.accession} is listed twice (samples '{seen_acc[s.accession]}' "
-                f"and '{s.name}'); each run must be processed once"
+                f"accession {accession} is listed twice (samples '{seen_acc[accession]}' "
+                f"and '{name}'); each run must be processed once"
             )
         else:
-            seen_acc[s.accession] = s.name
+            seen_acc[accession] = name
     for name, count in seen_names.items():
         if count > 1:
             problems.append(
@@ -222,6 +226,7 @@ def read_metadata_csv(path: Path, default_layout: str | None = None) -> list[Sam
         )
 
     samples: list[Sample] = []
+    all_ids: list[tuple[str, str]] = []  # every row, valid or not, for duplicate detection
     if len(rows) < 2:
         raise InputValidationError(f"metadata file {p} contains a header but no samples")
     for line_no, row in enumerate(rows[1:], start=2):
@@ -230,6 +235,7 @@ def read_metadata_csv(path: Path, default_layout: str | None = None) -> list[Sam
             continue
         rec = {lower[i]: row[i].strip() for i in range(len(header))}
         name, acc = rec.get("sample", ""), rec.get("accession", "")
+        all_ids.append((name, acc))
         row_problems = []
         if not name:
             row_problems.append("empty 'sample'")
@@ -260,7 +266,7 @@ def read_metadata_csv(path: Path, default_layout: str | None = None) -> list[Sam
         }
         assert lay is not None
         samples.append(Sample(name=name, accession=acc, layout=lay, metadata=metadata))
-    _check_duplicates(samples, problems)
+    _check_duplicates(all_ids, problems)
     if problems:
         raise InputValidationError(
             f"metadata file {p} contains {len(problems)} problem(s)",

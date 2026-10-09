@@ -125,12 +125,13 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["continue", "stop"],
         help="after a sample fails: continue with others (default) or stop",
     )
-    mode = o.add_mutually_exclusive_group()
-    mode.add_argument(
+    o.add_argument(
         "--dry-run",
         action="store_true",
-        help="validate input and show planned actions; download and process nothing",
+        help="validate input and show planned actions; download and process nothing "
+        "(combine with --resume to see which steps would be reused)",
     )
+    mode = o.add_mutually_exclusive_group()
     mode.add_argument(
         "--resume",
         action="store_true",

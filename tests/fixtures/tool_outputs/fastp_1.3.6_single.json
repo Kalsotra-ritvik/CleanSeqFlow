@@ -1,0 +1,52 @@
+{
+ "summary": {
+  "fastp_version": "1.3.6",
+  "sequencing": "single end (100 cycles)",
+  "before_filtering": {
+   "total_reads": 1500,
+   "total_bases": 150000,
+   "q20_bases": 143283,
+   "q30_bases": 110893,
+   "q20_rate": 0.95522,
+   "q30_rate": 0.739287,
+   "read1_mean_length": 100,
+   "gc_content": 0.48822
+  },
+  "after_filtering": {
+   "total_reads": 1434,
+   "total_bases": 143400,
+   "q20_bases": 143283,
+   "q30_bases": 110893,
+   "q20_rate": 0.999184,
+   "q30_rate": 0.773312,
+   "read1_mean_length": 100,
+   "gc_content": 0.488152
+  }
+ },
+ "filtering_result": {
+  "passed_filter_reads": 1434,
+  "low_quality_reads": 66,
+  "too_many_N_reads": 0,
+  "adapter_dimer_reads": 0,
+  "too_short_reads": 0,
+  "too_long_reads": 0
+ },
+ "duplication": {
+  "rate": 0.0626667
+ },
+ "read1_before_filtering": {
+  "total_reads": 1500,
+  "total_bases": 150000,
+  "q20_bases": 143283,
+  "q30_bases": 110893,
+  "total_cycles": 100
+ },
+ "read1_after_filtering": {
+  "total_reads": 1434,
+  "total_bases": 143400,
+  "q20_bases": 143283,
+  "q30_bases": 110893,
+  "total_cycles": 100
+ },
+ "command": "fastp --in1 /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/02_raw_fastq/se_1.fastq.gz --out1 /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/04_fastp/se_1/se_1.partial.fastq.gz --json /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/04_fastp/se_1/se_1.fastp.json --html /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/04_fastp/se_1/se_1.fastp.html --report_title fastp report: se_1 --thread 4 --compression 4 --qualified_quality_phred 15 --unqualified_percent_limit 40 --n_base_limit 5 --length_required 30 "
+}

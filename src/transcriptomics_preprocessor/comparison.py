@@ -45,7 +45,12 @@ class ComparisonRow:
         if a == b:
             return "unchanged"
         direction = "increased" if a > b else "decreased"
-        return f"{direction} by {abs(a - b):,.2f}{self.unit}".replace(".00", "")
+        diff = abs(a - b)
+        amount = f"{diff:,.0f}" if isinstance(diff, int) or diff.is_integer() else f"{diff:,.2f}"
+        if self.unit == "%":
+            # A difference between two percentages is in percentage points, not a relative %.
+            return f"{direction} by {amount} percentage points"
+        return f"{direction} by {amount}{self.unit}"
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
