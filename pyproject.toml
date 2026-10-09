@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transcriptomics-preprocessor"
+description = "Automated, resumable SRA-to-clean-FASTQ preprocessing and quality control for bulk RNA-seq."
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+keywords = ["RNA-seq", "transcriptomics", "FASTQ", "quality control", "fastp", "FastQC", "MultiQC", "SRA"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Environment :: Console",
+]
+# Runtime Python dependencies. The authoritative, pinned installation is the
+# conda environment created by install.sh (environment.yml / lock file); this
+# range only states what the code needs and does not conflict with that pin.
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10", "types-PyYAML"]
+
+[project.scripts]
+transcriptomics-preprocess = "transcriptomics_preprocessor.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "transcriptomics_preprocessor.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+transcriptomics_preprocessor = ["data/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "tools: requires the real external tools (fastqc, fastp, multiqc, pigz) on PATH",
+    "slow: slower end-to-end tests",
+]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = [
+    "E501",  # line length is enforced by `ruff format`; long string literals are allowed
+    "S101",  # asserts are used only for internal invariants / type narrowing, never for input validation
+    "S603",  # subprocess without shell: we always pass argument lists, reviewed
+    "S607",  # partial executable path: tools are resolved from the managed env PATH
+    "RUF001", "RUF002", "RUF003",  # unicode in strings/comments (arrows in text output)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S108", "S311", "S404", "S602"]
+"src/transcriptomics_preprocessor/synthetic.py" = ["S311"]  # deterministic test data, not crypto
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unreachable = true
+files = ["src"]

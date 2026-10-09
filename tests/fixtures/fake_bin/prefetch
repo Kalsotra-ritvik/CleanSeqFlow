@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Test double for SRA Toolkit `prefetch` (no network access).
+
+Creates <outdir>/<ACC>/<ACC>.sra containing a small JSON description that the
+fake fasterq-dump turns into synthetic reads. Behaviour can be altered with
+environment variables (comma-separated accession lists):
+
+  FAKE_PREFETCH_NETWORK_FAIL  fail like an unreachable NCBI (observed sra-tools 3.4.1 text)
+  FAKE_PREFETCH_PERMANENT_FAIL  fail like an invalid accession
+  FAKE_PREFETCH_NO_OUTPUT     exit 0 without writing a file
+  FAKE_PREFETCH_COUNT_FILE    append one line per invocation to this file
+  FAKE_LAYOUT_<ACC>           'paired' or 'single' layout of the fake run (default paired)
+  FAKE_READS_<ACC>            number of spots (default 1500)
+"""
+import json
+import os
+import sys
+from pathlib import Path
+
+
+def listed(var, acc):
+    return acc in [x for x in os.environ.get(var, "").split(",") if x]
+
+
+def main(argv):
+    if "--version" in argv or "-V" in argv:
+        print("\nprefetch : 3.4.1\n")
+        return 0
+    acc = next(a for a in argv if not a.startswith("-") and argv[argv.index(a) - 1] not in
+               ("--output-directory", "-O", "--max-size", "-X", "--verify", "-C", "--resume", "-r"))
+    outdir = Path(argv[argv.index("--output-directory") + 1])
+    if os.environ.get("FAKE_PREFETCH_COUNT_FILE"):
+        with open(os.environ["FAKE_PREFETCH_COUNT_FILE"], "a") as fh:
+            fh.write(acc + "\n")
+    print(f"2026-10-09T00:00:00 prefetch.3.4.1: 1) Resolving '{acc}'...", file=sys.stderr)
+    if listed("FAKE_PREFETCH_NETWORK_FAIL", acc):
+        print(f"2026-10-09T00:00:01 prefetch.3.4.1 int: connection not found while validating within "
+              f"network system module - cannot resolve remote location of '{acc}'", file=sys.stderr)
+        print(f"2026-10-09T00:00:01 prefetch.3.4.1: 1) Failed to resolve '{acc}'...", file=sys.stderr)
+        return 3
+    if listed("FAKE_PREFETCH_PERMANENT_FAIL", acc):
+        print(f"2026-10-09T00:00:01 prefetch.3.4.1 err: item not found while resolving '{acc}': "
+              "invalid accession", file=sys.stderr)
+        return 3
+    if listed("FAKE_PREFETCH_NO_OUTPUT", acc):
+        return 0
+    d = outdir / acc
+    d.mkdir(parents=True, exist_ok=True)
+    target = d / f"{acc}.sra"
+    if target.exists():
+        print(f"2026-10-09T00:00:01 prefetch.3.4.1: 1) '{acc}' is found locally", file=sys.stderr)
+        return 0
+    desc = {
+        "fake_sra": True,
+        "accession": acc,
+        "layout": os.environ.get(f"FAKE_LAYOUT_{acc}", "paired"),
+        "reads": int(os.environ.get(f"FAKE_READS_{acc}", "1500")),
+        "orphans": int(os.environ.get(f"FAKE_ORPHANS_{acc}", "0")),
+    }
+    tmp = target.with_suffix(".sra.tmp")
+    tmp.write_text(json.dumps(desc) + "\n" + "x" * 2048)
+    os.replace(tmp, target)
+    print(f"2026-10-09T00:00:02 prefetch.3.4.1: 1) '{acc}' was downloaded successfully", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

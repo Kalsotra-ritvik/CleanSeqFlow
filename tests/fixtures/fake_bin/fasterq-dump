@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Test double for SRA Toolkit `fasterq-dump`.
+
+Reads the JSON header written by the fake prefetch and writes synthetic FASTQ
+using the same file naming as fasterq-dump --split-3:
+<ACC>_1.fastq/<ACC>_2.fastq (paired), <ACC>.fastq (single or mate-less reads).
+
+Environment variables (comma-separated accession lists):
+  FAKE_FASTERQ_FAIL       exit 3 with an error message
+  FAKE_FASTERQ_NOSPACE    exit 3 with a "no space left" message
+  FAKE_FASTERQ_TRUNCATE   write a FASTQ whose last record is cut off
+  FAKE_FASTERQ_MISMATCH   write R2 with one read fewer than R1
+  FAKE_FASTERQ_SLEEP      seconds to sleep before writing (for interruption tests)
+"""
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+from transcriptomics_preprocessor.synthetic import write_synthetic_fastq
+
+
+def listed(var, acc):
+    return acc in [x for x in os.environ.get(var, "").split(",") if x]
+
+
+def main(argv):
+    if "--version" in argv or "-V" in argv:
+        print("\nfasterq-dump : 3.4.1\n")
+        return 0
+    src = Path(argv[0])
+    outdir = Path(argv[argv.index("--outdir") + 1])
+    tmp = Path(argv[argv.index("--temp") + 1])
+    assert "--split-3" in argv and "--skip-technical" in argv, "unexpected options"
+    assert tmp.is_dir(), "temp dir must exist"
+    desc = json.loads(src.read_text().splitlines()[0])
+    acc = desc["accession"]
+    if float(os.environ.get("FAKE_FASTERQ_SLEEP", "0")) > 0:
+        time.sleep(float(os.environ["FAKE_FASTERQ_SLEEP"]))
+    if listed("FAKE_FASTERQ_FAIL", acc):
+        print(f"fasterq-dump.3.4.1 err: invalid accession or corrupt file while reading '{acc}'", file=sys.stderr)
+        return 3
+    if listed("FAKE_FASTERQ_NOSPACE", acc):
+        print("fasterq-dump.3.4.1 err: storage exhausted while writing file - No space left on device",
+              file=sys.stderr)
+        return 3
+    seed = sum(map(ord, acc))
+    if desc["layout"] == "paired":
+        r1, r2 = outdir / f"{acc}_1.fastq", outdir / f"{acc}_2.fastq"
+        write_synthetic_fastq(r1, r2, n_reads=desc["reads"], accession=acc, seed=seed)
+        if desc.get("orphans"):
+            write_synthetic_fastq(outdir / f"{acc}.fastq", None, n_reads=desc["orphans"],
+                                  accession=acc + "orphan", seed=seed + 1)
+        if listed("FAKE_FASTERQ_MISMATCH", acc):
+            lines = r2.read_text().splitlines(keepends=True)
+            r2.write_text("".join(lines[:-4]))
+    else:
+        r1 = outdir / f"{acc}.fastq"
+        write_synthetic_fastq(r1, None, n_reads=desc["reads"], accession=acc, seed=seed)
+    if listed("FAKE_FASTERQ_TRUNCATE", acc):
+        data = r1.read_text()
+        r1.write_text(data[: len(data) - 30])
+    print(f"spots read      : {desc['reads']}\nreads written   : {desc['reads'] * (2 if desc['layout'] == 'paired' else 1)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
