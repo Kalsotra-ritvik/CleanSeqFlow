@@ -573,3 +573,61 @@ def test_package_source_has_no_shell_true() -> None:
     tree = ast.parse("subprocess.run('x', shell=True)")
     call = next(n for n in ast.walk(tree) if isinstance(n, ast.Call))
     assert any(k.arg == "shell" for k in call.keywords)
+
+
+def test_interrupt_with_parallel_jobs(tmp_path: Path, env: dict[str, str]) -> None:
+    """SIGTERM while two samples convert concurrently: both stop, journal consistent, resume works."""
+    env["FAKE_FASTERQ_SLEEP"] = "60"
+    meta = write_metadata(tmp_path / "meta.csv", META_ROWS[:2])
+    out = tmp_path / "out"
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "transcriptomics_preprocessor",
+            "run",
+            "--metadata",
+            str(meta),
+            "--outdir",
+            str(out),
+            "--threads",
+            "2",
+            "--jobs",
+            "2",
+            "--no-color",
+        ],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    logs = [out / "logs" / "commands" / s / "convert.log" for s in ("ctrl_1", "ogt_1")]
+    deadline = time.time() + 90
+    while not all(p.exists() and "fasterq-dump" in p.read_text() for p in logs):
+        assert time.time() < deadline, "conversions never started"
+        time.sleep(0.2)
+    proc.send_signal(signal.SIGTERM)
+    stdout, stderr = proc.communicate(timeout=60)
+    assert proc.returncode == 130, stdout + stderr
+    state = json.loads((out / "pipeline_info" / "state.json").read_text())
+    assert "RUNNING" not in json.dumps(state)
+    for s in ("ctrl_1", "ogt_1"):
+        assert state["samples"][s]["stages"]["convert"]["status"] == "FAILED"
+    env.pop("FAKE_FASTERQ_SLEEP")
+    r = run_cli(
+        [
+            "run",
+            "--metadata",
+            str(meta),
+            "--outdir",
+            str(out),
+            "--threads",
+            "2",
+            "--jobs",
+            "2",
+            "--resume",
+        ],
+        env=env,
+    )
+    assert r.returncode == 0
+    assert r.stdout.count("SRA download [") == 2 and "REUSED" in r.stdout

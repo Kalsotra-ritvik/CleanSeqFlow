@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1180" viewBox="0 0 1000 1180" font-family="DejaVu Sans, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+    <style>
+      .t{font-size:19px;font-weight:700;fill:#111827}
+      .s{font-size:14px;fill:#374151}
+      .o{font-size:13px;fill:#1f2937}
+      .h{font-size:13px;font-weight:700;fill:#6b7280;letter-spacing:.06em}
+      .ln{stroke:#4b5563;stroke-width:2;fill:none;marker-end:url(#a)}
+      .dl{stroke:#9ca3af;stroke-width:1.5;stroke-dasharray:5 4;fill:none;marker-end:url(#a)}
+    </style>
+  </defs>
+  <rect width="1000" height="1180" fill="#ffffff"/>
+  <text x="40" y="44" style="font-size:26px;font-weight:700;fill:#111827">Transcriptomics Preprocessor — workflow</text>
+  <text x="40" y="70" class="s">Bulk RNA-seq: SRA run accessions → validated, quality-controlled, cleaned FASTQ (no alignment)</text>
+  <text x="70" y="108" class="h">PROCESSING (per sample)</text>
+  <text x="640" y="108" class="h">OUTPUTS</text>
+
+  <!-- input -->
+  <rect x="60" y="120" width="500" height="78" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="80" y="150" class="t">Input + validation</text>
+  <text x="80" y="174" class="s">--accessions SRR… or metadata CSV · config checks</text>
+  <text x="80" y="191" class="s">check-input / --dry-run stop here</text>
+  <path d="M310 198 V228" class="ln"/>
+
+  <!-- step 1 -->
+  <rect x="60" y="230" width="500" height="78" rx="10" fill="#ecfeff" stroke="#0891b2" stroke-width="2"/>
+  <text x="80" y="260" class="t">1  Download SRA archive</text>
+  <text x="80" y="284" class="s">prefetch · checksum verify · retry on network errors</text>
+  <path d="M310 308 V338" class="ln"/>
+  <path d="M560 269 H630" class="dl"/>
+  <text x="640" y="274" class="o">01_sra/&lt;accession&gt;/&lt;accession&gt;.sra</text>
+
+  <!-- step 2 -->
+  <rect x="60" y="340" width="500" height="78" rx="10" fill="#ecfeff" stroke="#0891b2" stroke-width="2"/>
+  <text x="80" y="370" class="t">2  Convert to FASTQ</text>
+  <text x="80" y="394" class="s">fasterq-dump --split-3 · layout check · pigz</text>
+  <path d="M310 418 V448" class="ln"/>
+  <path d="M560 379 H630" class="dl"/>
+  <text x="640" y="374" class="o">02_raw_fastq/&lt;sample&gt;_R1/_R2.fastq.gz</text>
+  <text x="640" y="392" class="o">02_raw_fastq/unpaired/ (mate-less reads)</text>
+
+  <!-- step 3 -->
+  <rect x="60" y="450" width="500" height="100" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="80" y="480" class="t">3  Raw validation + QC</text>
+  <text x="80" y="504" class="s">every record checked · R1/R2 count + name match</text>
+  <text x="80" y="524" class="s">FastQC per file → MultiQC across samples</text>
+  <path d="M310 550 V580" class="ln"/>
+  <path d="M560 500 H630" class="dl"/>
+  <text x="640" y="494" class="o">03_raw_qc/fastqc/&lt;sample&gt;/</text>
+  <text x="640" y="512" class="o">03_raw_qc/multiqc/raw_multiqc_report.html</text>
+
+  <!-- step 4 -->
+  <rect x="60" y="582" width="500" height="100" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+  <text x="80" y="612" class="t">4  fastp cleaning</text>
+  <text x="80" y="636" class="s">adapter trimming · quality / N / length filters</text>
+  <text x="80" y="656" class="s">pairs kept together · no deduplication · params recorded</text>
+  <path d="M310 682 V712" class="ln"/>
+  <path d="M560 632 H630" class="dl"/>
+  <text x="640" y="626" class="o">04_fastp/&lt;sample&gt;/ cleaned reads</text>
+  <text x="640" y="644" class="o">&lt;sample&gt;.fastp.html / .json</text>
+
+  <!-- step 5 -->
+  <rect x="60" y="714" width="500" height="100" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="80" y="744" class="t">5  Post-cleaning validation + QC</text>
+  <text x="80" y="768" class="s">same checks on cleaned reads</text>
+  <text x="80" y="788" class="s">FastQC → MultiQC (with fastp statistics)</text>
+  <path d="M310 814 V844" class="ln"/>
+  <path d="M560 764 H630" class="dl"/>
+  <text x="640" y="758" class="o">05_clean_qc/fastqc/&lt;sample&gt;/</text>
+  <text x="640" y="776" class="o">05_clean_qc/multiqc/clean_multiqc_report.html</text>
+
+  <!-- step 6 -->
+  <rect x="60" y="846" width="500" height="100" rx="10" fill="#fdf2f8" stroke="#db2777" stroke-width="2"/>
+  <text x="80" y="876" class="t">6  Final output + reports</text>
+  <text x="80" y="900" class="s">publish validated FASTQ · manifest · SHA-256</text>
+  <text x="80" y="920" class="s">before/after comparison · screening flags</text>
+  <path d="M560 896 H630" class="dl"/>
+  <text x="640" y="878" class="o" style="font-weight:700">06_final_fastq/  ← use for alignment</text>
+  <text x="640" y="896" class="o">MANIFEST.csv · SHA256SUMS</text>
+  <text x="640" y="914" class="o">07_reports/summary_report.html, .json, .csv</text>
+
+  <!-- journal -->
+  <rect x="60" y="980" width="880" height="160" rx="10" fill="#f9fafb" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="80" y="1010" class="t" style="font-size:17px">Across all steps</text>
+  <text x="80" y="1036" class="s">• Run journal (pipeline_info/state.json): NOT_STARTED / RUNNING / COMPLETED / FAILED / SKIPPED per step and sample</text>
+  <text x="80" y="1058" class="s">• --resume reuses a step only if parameters, tool version, inputs and outputs are unchanged</text>
+  <text x="80" y="1080" class="s">• A failed sample does not stop the others (unless --on-error stop); Ctrl-C stops tools cleanly (exit 130)</text>
+  <text x="80" y="1102" class="s">• Every command is logged (logs/commands/…); structured events in logs/events.jsonl</text>
+  <text x="80" y="1124" class="s">• Tools are installed by ./install.sh into a private, checksum-verified environment</text>
+</svg>

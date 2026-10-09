@@ -1,0 +1,19 @@
+# Example user configuration. Only the keys you want to change are needed;
+# everything else keeps its default (see config/default.yaml).
+# Use with: transcriptomics-preprocess run --metadata metadata.csv --outdir results --config examples/config.yaml
+threads: 8
+jobs: 2            # two samples at a time, 4 threads each
+
+download:
+  max_size: 200G   # allow larger runs than the 100G default
+
+fastp:
+  length_required: 25          # discard reads shorter than 25 bp after trimming
+  cut_tail: true               # sliding-window trimming of low-quality 3' ends
+  cut_mean_quality: 20
+  # Illumina TruSeq adapters, if automatic detection misses them:
+  # adapter_sequence: AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+  # adapter_sequence_r2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+
+screening:
+  min_clean_reads: 20000000    # flag samples with fewer than 20 M cleaned reads/pairs

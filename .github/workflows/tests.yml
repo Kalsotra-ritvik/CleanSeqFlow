@@ -1,0 +1,66 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint, types, unit tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install development tools
+        run: python -m pip install ruff mypy types-PyYAML "PyYAML>=6" "pytest>=8"
+      - name: Format check
+        run: ruff format --check src tests
+      - name: Lint
+        run: ruff check src tests
+      - name: Type check (strict)
+        run: mypy
+      - name: Shell scripts
+        run: shellcheck install.sh uninstall.sh scripts/*.sh
+      - name: Unit and CLI tests (tool-based tests are skipped here)
+        run: PYTHONPATH=src python -m pytest tests -q -rs
+
+  install-and-integration:
+    name: clean install + full test suite with real tools
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install with install.sh (as a user would)
+        run: ./install.sh
+      - name: Re-run installer (must be idempotent)
+        run: ./install.sh
+      - name: Launcher and doctor
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          transcriptomics-preprocess --version
+          transcriptomics-preprocess doctor --smoke-test
+      - name: Full test suite inside the installed environment
+        run: |
+          P="$HOME/.local/share/transcriptomics-preprocessor"
+          eval "$("$P/bin/micromamba" shell activate -s bash -p "$P/env")"
+          python -m pytest tests -q -rs
+      - name: Uninstall
+        run: |
+          ./uninstall.sh --dry-run
+          ./uninstall.sh --yes
+          test ! -e "$HOME/.local/share/transcriptomics-preprocessor"
+          test ! -e "$HOME/.local/bin/transcriptomics-preprocess"

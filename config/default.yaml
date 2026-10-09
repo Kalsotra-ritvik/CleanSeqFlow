@@ -1,0 +1,117 @@
+# Default configuration for Transcriptomics Preprocessor.
+#
+# Every key can be overridden in a user YAML file passed with --config, and
+# many have command-line equivalents (see `transcriptomics-preprocess run --help`).
+# Precedence: built-in defaults < --config file < command-line options.
+
+# Total CPU threads the pipeline may use at once.
+threads: 4
+# Number of samples processed concurrently. Each job receives threads // jobs threads.
+jobs: 1
+# Directory for large temporary files (fasterq-dump, FastQC). null = <outdir>/tmp
+tmpdir: null
+# What to do when a sample fails: "continue" with the other samples, or "stop".
+on_error: continue
+
+download:
+  # Maximum SRA file size prefetch will download (prefetch --max-size; its own default is 20G).
+  max_size: 100G
+  # Retries for a failed download (network problems). Invalid accessions are not retried.
+  retries: 3
+  # Seconds to wait before the first retry; doubles after every attempt.
+  retry_wait_seconds: 30
+  # Maximum number of simultaneous downloads (never more than `jobs`).
+  max_parallel: 2
+  # Give up on one prefetch attempt after this many hours.
+  timeout_hours: 24
+  # Keep the downloaded .sra files after successful conversion (recommended).
+  keep_sra: true
+  # Warn before downloading when less free space than this is available.
+  min_free_space: 20G
+
+conversion:
+  # Rule-of-thumb multiplier used for the pre-conversion disk-space WARNING:
+  # expected uncompressed FASTQ size ~= factor x SRA file size. It is a
+  # screening heuristic, not an exact prediction; fasterq-dump performs its
+  # own size check and stops if space runs out.
+  space_factor: 7
+  # Keep reads whose mate is missing (fasterq-dump --split-3 "unpaired" file)
+  # as a separate, clearly labelled file. They are never mixed into R1/R2.
+  keep_unpaired: true
+  # gzip compression level for raw FASTQ (pigz).
+  compression_level: 6
+  timeout_hours: 24
+
+validation:
+  # full: parse every record (exact read counts, R1/R2 name pairing).
+  # quick: parse only the first `quick_records` records (counts not exact).
+  mode: full
+  quick_records: 100000
+
+fastqc:
+  # Memory (MB) per file processed (FastQC --memory).
+  memory_mb: 512
+  timeout_hours: 12
+
+# fastp preprocessing. Defaults follow fastp's own documented defaults (v1.3.6),
+# which are deliberately mild; only adapter detection for paired-end data is
+# switched on in addition (fastp -2/--detect_adapter_for_pe).
+fastp:
+  adapter_trimming: true
+  # null = automatic detection / overlap analysis by fastp
+  adapter_sequence: null
+  adapter_sequence_r2: null
+  detect_adapter_for_pe: true
+  quality_filtering: true
+  # A base is "qualified" if its Phred quality >= this value (fastp -q).
+  qualified_quality_phred: 15
+  # Discard a read if more than this percentage of its bases are unqualified (fastp -u).
+  unqualified_percent_limit: 40
+  # Discard a read with more than this many N bases (fastp -n).
+  n_base_limit: 5
+  # Discard a read whose mean quality is below this (fastp -e). 0 = off.
+  average_qual: 0
+  length_filtering: true
+  # Discard reads shorter than this after trimming (fastp -l).
+  length_required: 15
+  # Discard reads longer than this (fastp --length_limit). 0 = no limit.
+  length_limit: 0
+  # Sliding-window quality trimming (off by default in fastp).
+  cut_front: false
+  cut_tail: false
+  cut_window_size: 4
+  cut_mean_quality: 20
+  # Fixed trimming of bases at read starts/ends (0 = none).
+  trim_front1: 0
+  trim_tail1: 0
+  trim_front2: 0
+  trim_tail2: 0
+  # polyG trimming: auto (fastp decides from the read header; usually NOT
+  # triggered for SRA-derived reads, see docs), on, or off.
+  trim_poly_g: auto
+  trim_poly_x: false
+  low_complexity_filter: false
+  complexity_threshold: 30
+  overrepresentation_analysis: false
+  compression_level: 4
+  timeout_hours: 24
+
+multiqc:
+  timeout_hours: 2
+
+# Automated screening rules used ONLY to flag samples for human review.
+# They are not universal biological thresholds; adjust them to your study.
+screening:
+  # Flag samples retaining fewer reads than this percentage after fastp.
+  min_retained_percent: 70
+  # Flag cleaned samples with fewer reads (SE) or read pairs (PE) than this.
+  min_clean_reads: 10000000
+  # Flag residual adapter content (max % at any position, FastQC) above this
+  # after cleaning (FastQC's own WARN level for Adapter Content is 5%).
+  max_clean_adapter_percent: 5
+  # Flag a fastp after-filtering Q30 rate below this fraction.
+  min_clean_q30_rate: 0.7
+
+output:
+  # Write SHA-256 checksums for final FASTQ files.
+  checksums: true

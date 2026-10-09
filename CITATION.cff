@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, together with the tools it runs (fastp, FastQC, MultiQC, SRA Toolkit; see README)."
+title: "Transcriptomics Preprocessor: automated SRA-to-clean-FASTQ preprocessing and QC for bulk RNA-seq"
+version: 0.1.0
+type: software
+repository-code: "https://github.com/Kalsotra-ritvik/CleanSeqFlow"
+keywords: [RNA-seq, transcriptomics, quality control, FASTQ, fastp, FastQC, MultiQC, SRA]
+# TODO (project owner): replace with the real author name(s) and ORCID(s) before release.
+authors:
+  - name: "CleanSeqFlow contributors"
