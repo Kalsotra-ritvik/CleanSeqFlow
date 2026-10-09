@@ -52,4 +52,5 @@ Every error message ends with a "What to do" line. Detailed tool output is in
 | "Residual adapter content … above the screening threshold" | Adapter auto-detection may have missed the adapter; pass `--adapter-r1`/`--adapter-r2` and `--resume`. |
 | "fastp reported no adapter trimming … automatic adapter detection probably failed" | As above. |
 | Few reads/pairs after cleaning flagged | The flag uses a configurable screening threshold (default 10 million). Adequate depth depends on the study. |
+| fastp report lists output files ending in `.partial.fastq.gz` | fastp writes to temporary names; the files are renamed only after they passed validation. The final names are in `04_fastp/<sample>/` and `06_final_fastq/`. |
 | `INCONSISTENT` screening status | Read counts from fastp and from the files disagree. Please report it; do not use the sample until it is understood. |

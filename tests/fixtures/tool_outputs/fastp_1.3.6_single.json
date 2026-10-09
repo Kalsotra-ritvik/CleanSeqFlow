@@ -48,5 +48,5 @@
   "q30_bases": 110893,
   "total_cycles": 100
  },
- "command": "fastp --in1 /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/02_raw_fastq/se_1.fastq.gz --out1 /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/04_fastp/se_1/se_1.partial.fastq.gz --json /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/04_fastp/se_1/se_1.fastp.json --html /tmp/claude-0/-home-user-CleanSeqFlow/265f37aa-6e2a-56cd-bf23-5190eaab0fdb/scratchpad/e2e/out dir/04_fastp/se_1/se_1.fastp.html --report_title fastp report: se_1 --thread 4 --compression 4 --qualified_quality_phred 15 --unqualified_percent_limit 40 --n_base_limit 5 --length_required 30 "
+ "command": "fastp --in1 /path/to/results/02_raw_fastq/se_1.fastq.gz --out1 /path/to/results/04_fastp/se_1/se_1.partial.fastq.gz --json /path/to/results/04_fastp/se_1/se_1.fastp.json --html /path/to/results/04_fastp/se_1/se_1.fastp.html --report_title fastp report: se_1 --thread 4 --compression 4 --qualified_quality_phred 15 --unqualified_percent_limit 40 --n_base_limit 5 --length_required 30 "
 }

@@ -30,7 +30,9 @@ from .errors import IntegrityError, InterruptedRun
 from .runner import STOP_EVENT
 
 _SEQ_CHARS = frozenset(b"ACGTNacgtnRYKMSWBDHVUrykmswbdhvu.")
-_QUAL_MIN, _QUAL_MAX = 33, 126
+# bytes.translate(None, delete) removes allowed bytes in C; anything left is invalid.
+_SEQ_DELETE = bytes(sorted(_SEQ_CHARS))
+_QUAL_DELETE = bytes(range(33, 127))  # Phred+33 printable range '!'..'~'
 _GZIP_MAGIC = b"\x1f\x8b"
 _STOP_CHECK_EVERY = 200_000
 
@@ -116,10 +118,11 @@ class _RecordReader:
                 if not seq:
                     # Zero-length reads are legal FASTQ but useless downstream; flag them.
                     raise self._fail("zero-length read")
-                if not _SEQ_CHARS.issuperset(seq):
-                    bad = sorted({chr(c) for c in seq if c not in _SEQ_CHARS})
+                bad_seq = seq.translate(None, _SEQ_DELETE)
+                if bad_seq:
+                    bad = sorted({chr(c) for c in bad_seq})
                     raise self._fail(f"invalid sequence character(s): {''.join(bad)!r}")
-                if min(qual) < _QUAL_MIN or max(qual) > _QUAL_MAX:
+                if qual.translate(None, _QUAL_DELETE):
                     raise self._fail("quality characters outside the Phred+33 range")
                 yield header, seq, qual
         except (EOFError, gzip.BadGzipFile, zlib.error) as exc:
